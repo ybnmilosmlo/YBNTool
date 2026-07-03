@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YBN — Resource Map Checker</title>
+<link rel="icon" type="image/png" href="https://i.ibb.co/cSYFH6Y1/YBNLogo.png">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #05080d;
+    --bg-panel: #0c1420;
+    --card: #101c2c;
+    --line: #1c2e42;
+    --cyan: #35c1e8;
+    --cyan-soft: rgba(53, 193, 232, 0.18);
+    --cyan-glow: rgba(53, 193, 232, 0.35);
+    --text: #e7f1f7;
+    --text-dim: #7d93a8;
+    --warn: #e8b23a;
+    --bad: #e8595a;
+    --good: #4bd07a;
+    --mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+    --sans: 'Inter', system-ui, sans-serif;
+  }
+  html { scroll-behavior: smooth; }
+  * { box-sizing: border-box; }
+
+  /* ── PRELOADER (adapted from ybnmilos.com) ── */
+  #preloader {
+    position: fixed; inset: 0; background: #04040f;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 9999;
+    transition: opacity 1.2s cubic-bezier(0.4,0,0.2,1);
+  }
+  #preloader.hide { opacity: 0; pointer-events: none; }
+  .pre-logo-wrap { position: relative; width: 150px; height: 150px; margin-bottom: 26px; }
+  .pre-img-outline {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain;
+    filter: brightness(0) saturate(100%) invert(58%) sepia(98%) saturate(400%) hue-rotate(170deg) brightness(110%) drop-shadow(0 0 8px #35c1e888);
+    opacity: 1;
+  }
+  .pre-img-fill {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain;
+    clip-path: inset(100% 0 0 0);
+    animation: preFillUp 2.4s cubic-bezier(0.4,0,0.2,1) forwards;
+    filter: brightness(0) invert(1) drop-shadow(0 0 6px rgba(255,255,255,0.9)) drop-shadow(0 0 14px rgba(255,255,255,0.5));
+  }
+  @keyframes preFillUp { 0% { clip-path: inset(100% 0 0 0); } 100% { clip-path: inset(0% 0 0 0); } }
+  .pre-img-fill.filled {
+    animation: preFillUp 2.4s cubic-bezier(0.4,0,0.2,1) forwards, preGlowPulse 0.5s 2.4s ease-out forwards;
+  }
+  @keyframes preGlowPulse {
+    0%   { filter: brightness(0) invert(1) drop-shadow(0 0 6px rgba(255,255,255,0.9)) drop-shadow(0 0 14px rgba(255,255,255,0.5)); }
+    45%  { filter: brightness(0) invert(1) drop-shadow(0 0 40px #fff) drop-shadow(0 0 80px #35c1e8) drop-shadow(0 0 120px #35c1e8cc); }
+    100% { filter: drop-shadow(0 0 20px rgba(255,255,255,.6)) drop-shadow(0 0 40px #35c1e844); }
+  }
+  .pre-title { color: #fff; font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 6px; margin-bottom: 6px; }
+  .pre-sub { color: var(--cyan); font-size: 12px; font-weight: 700; letter-spacing: 8px; margin-bottom: 16px; font-family: var(--sans); }
+  .pre-dots { display: flex; gap: 6px; }
+  .pre-dots span { width: 7px; height: 7px; border-radius: 50%; background: var(--cyan); animation: preDot 1.2s infinite; }
+  .pre-dots span:nth-child(2) { animation-delay: .2s; background: #aaa; }
+  .pre-dots span:nth-child(3) { animation-delay: .4s; }
+  @keyframes preDot { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) {
+    .pre-img-fill { animation: none; clip-path: inset(0 0 0 0); }
+    .pre-dots span { animation: none; opacity: 0.7; }
+  }
+  /* ── END PRELOADER ── */
+
+  /* ── TV POWER-ON EFFECT ── */
+  #tv-content {
+    transform-origin: 50% 50%;
+  }
+  #tv-content.tv-off {
+    opacity: 0;
+    clip-path: inset(50% 0 50% 0);
+    transform: scaleY(0.015);
+    filter: brightness(4) saturate(0);
+  }
+  #tv-content.tv-on {
+    animation: tvPowerOn 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  @keyframes tvPowerOn {
+    0%   { opacity: 1; clip-path: inset(50% 0 50% 0); transform: scaleY(0.015); filter: brightness(4) saturate(0); }
+    12%  { opacity: 1; clip-path: inset(49% 0 49% 0); transform: scaleY(0.02); filter: brightness(4) saturate(0); }
+    30%  { clip-path: inset(38% 0 38% 0); transform: scaleY(0.35); filter: brightness(2.6) saturate(0.3); }
+    55%  { clip-path: inset(18% 0 18% 0); transform: scaleY(0.75); filter: brightness(1.8) saturate(0.7); }
+    80%  { clip-path: inset(2% 0 2% 0); transform: scaleY(1); filter: brightness(1.15) saturate(1); }
+    100% { clip-path: inset(0% 0 0% 0); transform: scaleY(1); filter: brightness(1) saturate(1); }
+  }
+  #tv-flash {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    pointer-events: none;
+    background: #ffffff;
+    opacity: 0;
+  }
+  #tv-flash.flash-active {
+    animation: tvFlash 0.5s ease-out forwards;
+  }
+  @keyframes tvFlash {
+    0%   { opacity: 0; }
+    5%   { opacity: 1; }
+    15%  { opacity: 0.95; }
+    30%  { opacity: 0.5; }
+    50%  { opacity: 0.7; }
+    70%  { opacity: 0.15; }
+    100% { opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #tv-content.tv-off { opacity: 1; clip-path: none; transform: none; filter: none; }
+    #tv-content.tv-on { animation: none; }
+    #tv-flash.flash-active { animation: none; }
+  }
+  /* ── END TV POWER-ON EFFECT ── */
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: radial-gradient(ellipse at 50% 0%, #0c1a29 0%, var(--bg-deep) 60%);
+    color: var(--text);
+    font-family: var(--sans);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 20px 80px;
+  }
+  .title-block { text-align: center; margin-bottom: 28px; }
+  .title-block .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--cyan);
+    text-transform: uppercase;
+  }
+  .title-block h1 {
+    margin: 8px 0 6px;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  .title-block p {
+    margin: 0;
+    color: var(--text-dim);
+    font-size: 13.5px;
+    max-width: 520px;
+  }
+  .title-logo {
+    width: 72px;
+    height: 72px;
+    object-fit: contain;
+    margin-bottom: 14px;
+    filter: drop-shadow(0 0 14px rgba(53, 193, 232, 0.5));
+  }
+
+  /* SELECT ZONE BUTTON — matches ybnmilos.com select-city-btn */
+  .select-zone-wrap {
+    display: flex;
+    justify-content: center;
+    padding: 22px 0 4px;
+  }
+  .select-zone-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 16px 52px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: #000;
+    background: var(--cyan);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 0 30px rgba(53, 193, 232, 0.35), inset 0 1px 0 rgba(255,255,255,0.15);
+  }
+  .select-zone-btn:hover {
+    background: #4fd6ff;
+    box-shadow: 0 0 60px rgba(53, 193, 232, 0.65);
+    transform: translateY(-2px);
+  }
+
+  .map-card {
+    position: relative;
+    width: min(1500px, 96vw);
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    box-shadow: 0 0 60px -10px var(--cyan-glow), inset 0 0 0 1px rgba(255,255,255,0.02);
+    overflow: hidden;
+    line-height: 0;
+  }
+  .map-card img.basemap {
+    display: block;
+    width: 100%;
+    height: auto;
+    filter: saturate(0.75) brightness(0.85);
+  }
+
+  /* --- CRT / old TV effect --- */
+  .map-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    pointer-events: none;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.45) 0px,
+      rgba(0, 0, 0, 0.45) 1px,
+      rgba(0, 0, 0, 0) 2px,
+      rgba(0, 0, 0, 0) 4px
+    );
+    animation: crt-scan-drift 6s linear infinite;
+  }
+  .map-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 6;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.75) 100%),
+      linear-gradient(rgba(53, 193, 232, 0.06), rgba(53, 193, 232, 0.06));
+    animation: crt-flicker 3.5s infinite;
+  }
+  .crt-noise {
+    position: absolute;
+    inset: 0;
+    z-index: 7;
+    pointer-events: none;
+    opacity: 0.22;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    animation: crt-noise-shift 0.2s steps(2) infinite;
+  }
+  @keyframes crt-scan-drift {
+    0% { background-position: 0 0; }
+    100% { background-position: 0 200px; }
+  }
+  @keyframes crt-flicker {
+    0%, 89%, 100% { opacity: 1; }
+    90% { opacity: 0.7; }
+    91% { opacity: 1; }
+    92% { opacity: 0.8; }
+    93% { opacity: 1; }
+    94% { opacity: 0.6; }
+    95% { opacity: 1; }
+  }
+  @keyframes crt-noise-shift {
+    0% { transform: translate(0, 0); }
+    50% { transform: translate(-3%, 2%); }
+    100% { transform: translate(2%, -2%); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .map-card::before, .map-card::after, .crt-noise { animation: none; }
+  }
+  /* --- end CRT effect --- */
+
+  .no-image-note {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 6px;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 12px;
+    text-align: center;
+    padding: 20px;
+  }
+  svg.zone-layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .zone-poly {
+    fill: var(--cyan-soft);
+    stroke: var(--cyan);
+    stroke-width: 0.4;
+    stroke-opacity: 0.7;
+    cursor: pointer;
+    transition: fill 0.25s ease-out, stroke-opacity 0.25s ease-out, filter 0.25s ease-out;
+  }
+  .zone-poly:hover, .zone-poly.active {
+    fill: rgba(53, 193, 232, 0.38);
+    stroke-opacity: 1;
+    filter: drop-shadow(0 0 6px rgba(53, 193, 232, 0.6));
+  }
+  .tutorial-overlay-poly {
+    fill: rgba(255, 255, 255, 0);
+    stroke: none;
+    cursor: pointer;
+    transition: fill 0.2s ease-out;
+  }
+  .tutorial-overlay-poly:hover {
+    fill: rgba(255, 255, 255, 0.12);
+  }
+  .zone-tag {
+    position: absolute;
+    font-family: var(--mono);
+    font-size: 8.5px;
+    letter-spacing: 0.02em;
+    color: var(--text);
+    background: rgba(5, 8, 13, 0.6);
+    padding: 1px 4px;
+    border-radius: 4px;
+    pointer-events: none;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  /* Modal */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(2, 5, 9, 0.72);
+    backdrop-filter: blur(3px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    padding: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease-out;
+  }
+  .overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .modal {
+    width: min(560px, 100%);
+    max-height: 85vh;
+    overflow-y: auto;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: 0 0 80px -10px var(--cyan-glow);
+    transform: scale(0.96) translateY(6px);
+    transition: transform 0.22s ease-out;
+  }
+  .overlay.open .modal {
+    transform: scale(1) translateY(0);
+  }
+  .modal-head {
+    padding: 20px 22px 16px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .modal-head h2 {
+    margin: 0;
+    font-size: 15px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--cyan);
+  }
+  .modal-head button.close {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 18px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .modal-body { padding: 20px 22px 24px; }
+  .modal-body .zone-name {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0 0 4px;
+  }
+  .modal-body .sub {
+    color: var(--text-dim);
+    font-size: 12.5px;
+    margin: 0 0 20px;
+  }
+  .browse-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--cyan);
+    color: #04141c;
+    border: none;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    width: 100%;
+    justify-content: center;
+    transition: filter 0.18s ease-out, transform 0.18s ease-out;
+  }
+  .browse-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
+  .browse-btn:active { transform: translateY(0); }
+  .browse-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .status-line {
+    margin-top: 14px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    text-align: center;
+    min-height: 16px;
+    transition: color 0.2s ease-out;
+  }
+  .status-line.status-error {
+    color: var(--bad);
+    font-weight: 700;
+  }
+
+  .results { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; }
+  .result-row {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px 14px;
+    background: rgba(255,255,255,0.02);
+    transition: background 0.18s ease-out, border-color 0.18s ease-out;
+    animation: row-fade-in 0.25s ease-out both;
+  }
+  .result-row:hover {
+    background: rgba(255,255,255,0.04);
+    border-color: rgba(53, 193, 232, 0.25);
+  }
+  @keyframes row-fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .result-row .r-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .result-row .fname {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    word-break: break-all;
+  }
+  .badge {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+  }
+  .badge.ok { background: rgba(75, 208, 122, 0.15); color: var(--good); }
+  .badge.dup { background: rgba(232, 178, 58, 0.15); color: var(--warn); }
+  .badge.missing { background: rgba(232, 89, 90, 0.15); color: var(--bad); }
+  .paths {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .paths > div {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    background: rgba(0,0,0,0.25);
+    padding: 5px 8px;
+    border-radius: 5px;
+    word-break: break-all;
+  }
+  .path-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    background: rgba(0,0,0,0.25);
+    padding: 5px 6px 5px 8px;
+    border-radius: 5px;
+  }
+  .path-line .path-text {
+    word-break: break-all;
+    flex: 1;
+  }
+  .delete-btn {
+    flex-shrink: 0;
+    font-family: var(--sans);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    background: rgba(232, 89, 90, 0.12);
+    color: var(--bad);
+    border: 1px solid rgba(232, 89, 90, 0.4);
+    border-radius: 6px;
+    padding: 5px 10px;
+    cursor: pointer;
+    transition: background 0.15s ease-out, transform 0.15s ease-out;
+  }
+  .delete-btn:hover {
+    background: rgba(232, 89, 90, 0.25);
+    transform: translateY(-1px);
+  }
+  .compat-note {
+    margin-top: 16px;
+    font-size: 11.5px;
+    color: var(--text-dim);
+    line-height: 1.5;
+    border-top: 1px solid var(--line);
+    padding-top: 12px;
+  }
+  .remote-note {
+    margin-top: 12px;
+    font-size: 11.5px;
+    color: var(--text-dim);
+    line-height: 1.5;
+    background: rgba(232, 178, 58, 0.08);
+    border: 1px solid rgba(232, 178, 58, 0.25);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .remote-note b { color: var(--warn); }
+</style>
+</head>
+<body>
+
+<div id="preloader">
+  <div class="pre-logo-wrap">
+    <img class="pre-img-outline" src="https://i.ibb.co/cSYFH6Y1/YBNLogo.png" alt="">
+    <img class="pre-img-fill" id="pre-img-fill" src="https://i.ibb.co/cSYFH6Y1/YBNLogo.png" alt="">
+  </div>
+  <p class="pre-title">YBN MILOS</p>
+  <p class="pre-sub">LOADING</p>
+  <div class="pre-dots"><span></span><span></span><span></span></div>
+</div>
+
+
+<div id="tv-content" class="tv-off">
+
+<div class="title-block">
+  <img class="title-logo" src="https://i.ibb.co/cSYFH6Y1/YBNLogo.png" alt="YBN Logo">
+  <div class="eyebrow">Resource Integrity Check</div>
+  <p>Click your zone, then locate your <code style="font-family:monospace">resources</code> folder. We'll scan it and show you exactly where each map file lives — so you know what to delete.</p>
+  <div class="select-zone-wrap">
+    <a href="https://ybnmilos-mlo-world.tebex.io/" target="_blank" class="select-zone-btn">SELECT YOUR CITY</a>
+  </div>
+</div>
+
+<div class="map-card" id="mapCard">
+  <!-- Replace with your real map image -->
+  <img class="basemap" src="https://i.ibb.co/LfgrNWT/MILOSTVIMAGETUTORIAL.png" alt="City map" onerror="this.style.display='none'; document.getElementById('noImgNote').style.display='flex';">
+  <div class="no-image-note" id="noImgNote" style="display:none;">
+    <div>MAP.jpeg not found</div>
+    <div>Place your map image next to this file, named <b>MAP.jpeg</b>.</div>
+  </div>
+  <svg class="zone-layer" id="zoneLayer" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+  <div class="crt-noise"></div>
+</div>
+
+</div>
+<div id="tv-flash"></div>
+
+<!-- Modal -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Locate your resource folder</h2>
+      <button class="close" id="closeModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="zone-name" id="zoneName">Zone</div>
+      <p class="sub">Select your server's <code style="font-family:monospace">resources</code> folder. We'll search every subfolder inside it.</p>
+
+      <button class="browse-btn" id="browseBtn">Browse…</button>
+      <div class="status-line" id="statusLine"></div>
+
+      <div class="remote-note">
+        <b>Hosted your server remotely?</b> (e.g. accessed only via WinSCP or FileZilla) —
+        this tool can only read folders that are on <b>this computer</b>. Go to
+        <a href="https://github.com/ybnmilosmlo/YBNTool" target="_blank" rel="noopener" style="color: var(--cyan); font-weight: 700;">this website</a>
+        and download <b>YBNTool</b> instead — it connects directly to your server.
+      </div>
+
+      <div class="results" id="results"></div>
+
+      <div class="compat-note" id="compatNote"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/*
+  ============================================================
+  ZONES — coordinates below are RAW PIXEL coordinates copied
+  directly from image-map.net (same format: x1,y1,x2,y2,...).
+  They are converted to percentages automatically at runtime
+  using the actual loaded image's natural width/height, so
+  they'll line up correctly no matter the display size.
+
+  files: fill in the .ymap filenames for each zone as you send them.
+  ============================================================
+*/
+const ZONES = [
+  { id: "southside", label: "SouthSide", name: "SouthSide",
+    pixelPoints: "287,490,303,480,337,484,341,568,326,581,301,583,279,590,255,571,235,561,255,525",
+    files: [
+      "lr_sc1_occl_00.ymap",
+      "lr_sc1_occl_01.ymap",
+      "lr_sc1_occl_02.ymap",
+      "lr_sc1_occl_03.ymap",
+      "lr_sc1_rd_strm_3.ymap",
+      "lr_sc1_rd_long_0.ymap",
+      "lr_sc1_rd_critical_1.ymap",
+      "lr_sc1_rd_strm_7.ymap",
+      "lr_sc1_rd_critical_2.ymap",
+      "lr_sc1_rd_strm_8.ymap"
+    ] },
+  { id: "eastlosantos", label: "East Los Santos", name: "East Los Santos",
+    pixelPoints: "205,602,279,613,313,610,317,663,291,678,256,684,244,646,196,640",
+    files: [
+      "bkr_id1_occl_00.ymap",
+      "bkr_id1_occl_01.ymap",
+      "bkr_id1_occl_02.ymap",
+      "bkr_id1_occl_03.ymap",
+      "bkr_id1_rd_long_0.ymap"
+    ] },
+  { id: "elysianfields", label: "Elysian Fields", name: "Elysian Fields",
+    pixelPoints: "303,683,325,708,349,731,373,745,335,745,281,727,202,709,184,684,186,658,223,681,255,686",
+    files: [
+      "hei_ch3_occl_00.ymap",
+      "ch1_far_occl_00.ymap"
+    ] },
+  { id: "jefferson", label: "Jefferson/Las Colinas", name: "Jefferson/Las Colinas",
+    pixelPoints: "312,666,324,695,359,708,397,704,432,695,455,683,456,660,409,659,376,653,347,665",
+    files: [
+      "ch1_far_occl_00.ymap",
+      "hei_ch3_occl_00.ymap",
+      "hei_ch3_occl_01.ymap",
+      "hei_ch3_occl_02.ymap",
+      "hei_id2_occl_03.ymap",
+      "hei_ch3_occl_03.ymap"
+    ] },
+  { id: "downtown", label: "DownTown", name: "DownTown",
+    pixelPoints: "349,478,349,577,435,576,480,597,505,523,497,527,465,513,478,471,469,427,431,366,391,396,404,473",
+    files: [
+      "apa_ss1_occl_00.ymap",
+      "apa_ss1_occl_01.ymap",
+      "apa_ss1_occl_02.ymap",
+      "apa_ss1_occl_03.ymap",
+      "ch1_far_occl_00.ymap",
+      "hei_bh1_occl_00.ymap",
+      "hei_bh1_occl_02.ymap",
+      "hei_bh1_occl_04.ymap",
+      "hei_bh1_occl_05.ymap",
+      "hei_dt1_occl_00.ymap",
+      "hei_dt1_occl_01.ymap",
+      "hei_dt1_occl_02.ymap",
+      "hei_dt1_occl_03.ymap",
+      "hei_dt1_occl_04.ymap",
+      "hei_dt1_occl_06.ymap",
+      "hei_dt1_occl_07.ymap",
+      "hei_hw1_occl_01.ymap",
+      "hei_hw1_occl_00.ymap",
+      "hei_kt1_occl_02.ymap",
+      "hei_kt1_occl_03.ymap",
+      "hei_sm_occl_00.ymap",
+      "hei_sm_occl_02.ymap",
+      "hei_sm_occl_03.ymap",
+      "vb_occl_00.ymap",
+      "hei_dt1_rd1_critical_1.ymap",
+      "hei_dt1_rd1_long_0.ymap",
+      "bh1_14_0.ybn",
+      "bh1_16_0.ybn",
+      "hei_sm_rd_long_1.ymap",
+      "hei_sm_rd_strm_3.ymap"
+    ] },
+  { id: "beach", label: "Beach", name: "Beach",
+    pixelPoints: "330,320,380,399,361,426,332,439,341,451,310,472,275,406,252,372",
+    files: [
+      "vb_occl_00.ymap",
+      "vb_occl_01.ymap",
+      "hei_vb_rd_long_0.ymap",
+      "hei_vb_rd_strm_4.ymap"
+    ] },
+  { id: "industrial", label: "Industrial", name: "Industrial",
+    pixelPoints: "219,490,242,504,232,529,229,570,234,588,196,577,197,509",
+    files: [
+      "hei_po1_occl_00.ymap",
+      "hei_po1_occl_01.ymap",
+      "hei_po1_occl_03.ymap",
+      "hei_ship_occ_grp1.ymap",
+      "hei_ship_occ_grp2.ymap",
+      "ship_occ_grp1.ymap",
+      "ship_occ_grp2.ymap",
+      "bkr_id1_occl_00.ymap",
+      "bkr_id1_occl_01.ymap",
+      "lr_sc1_occl_01.ymap"
+    ] },
+  { id: "vinewood", label: "VineWood", name: "VineWood",
+    pixelPoints: "582,573,612,571,636,589,633,622,589,622,566,600",
+    files: [] },
+  { id: "vinewoodlake", label: "Vinewood Lake", name: "Vinewood Lake",
+    pixelPoints: "569,479,547,507,555,534,574,557,592,544,600,509,595,485",
+    files: [
+      "apa_ch2_occl_06.ymap",
+      "apa_ch2_occl_07.ymap",
+      "ch1_far_occl_00.ymap"
+    ] },
+  { id: "delperro", label: "Del Perro", name: "Del Perro",
+    pixelPoints: "429,321,469,348,468,387,424,345",
+    files: [
+      "hei_sm_occl_00.ymap",
+      "hei_sm_occl_01.ymap",
+      "hei_sm_occl_03.ymap"
+    ] },
+  { id: "pacificbluffs", label: "Pacific Bluffs", name: "Pacific Bluffs",
+    pixelPoints: "465,173,480,205,529,182,574,178,594,162,631,172,638,142,562,132,506,141",
+    files: [
+      "ch1_occl_00.ymap",
+      "ch1_occl_02.ymap",
+      "hei_ch1_occl_00.ymap",
+      "hei_ch1_occl_02.ymap"
+    ] },
+  { id: "baltimore", label: "Baltimore/Philadelphia", name: "Baltimore/Philadelphia",
+    pixelPoints: "882,662,876,707,867,723,837,744,823,778,818,804,852,833,898,847,948,851,981,839,951,807,914,778,924,762,940,728,895,666",
+    files: [
+      "cs4_occl_00.ymap",
+      "cs4_occl_01.ymap",
+      "cs4_occl_02.ymap",
+      "cs4_occl_03.ymap",
+      "cs4_occl_04.ymap",
+      "cs4_occl_05.ymap",
+      "cs4_occl_06.ymap",
+      "cs4_occl_07.ymap",
+      "cs1_far_occl_01.ymap"
+    ] },
+  { id: "paleto", label: "Paleto", name: "Paleto",
+    pixelPoints: "1140,468,1173,495,1207,538,1217,567,1249,539,1257,496,1213,454,1169,444",
+    files: [
+      "cs1_far_occl_00.ymap",
+      "cs1_occl_07.ymap",
+      "cs1_occl_09.ymap",
+      "cs1_occl_10.ymap",
+      "cs1_occl_11.ymap",
+      "hei_cs1_roads_pb_strm_2.ymap"
+    ] },
+  { id: "mirrorpark", label: "Mirror Park", name: "Mirror Park",
+    pixelPoints: "463,602,510,629,518,654,479,654,384,643,382,607,425,594",
+    files: [
+      "hei_id2_occl_03.ymap",
+      "hei_id2_occl_02.ymap",
+      "hei_hw1_occl_01.ymap"
+    ] }
+];
+// ============================================================
+
+// Invisible clickable overlay for the "WATCH A TUTORIAL" graphic baked
+// into the map image itself. Not a city zone — clicking it opens the
+// tutorial video link instead of the resource folder flow.
+const TUTORIAL_ZONE_PIXELS = "950,85,931,85,924,98,926,145,933,160,967,166,1244,175,1256,169,1261,153,1257,110,1242,99";
+const TUTORIAL_LINK = "#"; // replace with the real video link when ready
+
+const basemapImg = document.querySelector('.basemap');
+
+function pixelPointsToPercent(pixelPoints, naturalW, naturalH) {
+  const nums = pixelPoints.split(',').map(Number);
+  const pct = [];
+  for (let i = 0; i < nums.length; i += 2) {
+    const xPct = (nums[i] / naturalW) * 100;
+    const yPct = (nums[i + 1] / naturalH) * 100;
+    pct.push([xPct, yPct]);
+  }
+  return pct;
+}
+
+function centroid(points) {
+  const n = points.length;
+  const sum = points.reduce((acc, p) => [acc[0] + p[0], acc[1] + p[1]], [0, 0]);
+  return [sum[0] / n, sum[1] / n];
+}
+
+const zoneLayer = document.getElementById('zoneLayer');
+const mapCard = document.getElementById('mapCard');
+const overlay = document.getElementById('overlay');
+const zoneNameEl = document.getElementById('zoneName');
+const browseBtn = document.getElementById('browseBtn');
+const statusLine = document.getElementById('statusLine');
+const resultsEl = document.getElementById('results');
+const compatNote = document.getElementById('compatNote');
+const closeModal = document.getElementById('closeModal');
+
+let currentZone = null;
+
+function renderZones() {
+  zoneLayer.innerHTML = '';
+  document.querySelectorAll('.zone-tag').forEach(el => el.remove());
+
+  const naturalW = basemapImg.naturalWidth;
+  const naturalH = basemapImg.naturalHeight;
+  if (!naturalW || !naturalH) return; // image not loaded yet
+
+  ZONES.forEach(zone => {
+    const pctPoints = pixelPointsToPercent(zone.pixelPoints, naturalW, naturalH);
+    const pointsAttr = pctPoints.map(p => `${p[0]},${p[1]}`).join(' ');
+
+    const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    poly.setAttribute('points', pointsAttr);
+    poly.setAttribute('class', 'zone-poly');
+    poly.dataset.zoneId = zone.id;
+    poly.addEventListener('click', () => openZone(zone));
+    zoneLayer.appendChild(poly);
+
+    const [cx, cy] = centroid(pctPoints);
+    const tag = document.createElement('div');
+    tag.className = 'zone-tag';
+    tag.textContent = zone.label;
+    tag.style.left = cx + '%';
+    tag.style.top = cy + '%';
+    tag.style.transform = 'translate(-50%, -50%)';
+    mapCard.appendChild(tag);
+  });
+
+  // Invisible clickable overlay over the baked-in "WATCH A TUTORIAL" graphic
+  const tutorialPct = pixelPointsToPercent(TUTORIAL_ZONE_PIXELS, naturalW, naturalH);
+  const tutorialPointsAttr = tutorialPct.map(p => `${p[0]},${p[1]}`).join(' ');
+  const tutorialPoly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+  tutorialPoly.setAttribute('points', tutorialPointsAttr);
+  tutorialPoly.setAttribute('class', 'tutorial-overlay-poly');
+  tutorialPoly.addEventListener('click', () => window.open(TUTORIAL_LINK, '_blank'));
+  zoneLayer.appendChild(tutorialPoly);
+}
+
+function openZone(zone) {
+  currentZone = zone;
+  zoneNameEl.textContent = zone.name;
+  statusLine.textContent = '';
+  resultsEl.innerHTML = '';
+  overlay.classList.add('open');
+
+  if (!window.showDirectoryPicker) {
+    browseBtn.disabled = true;
+    compatNote.innerHTML =
+      'Your browser does not support folder scanning. Please open this page in <b>Chrome</b> or <b>Edge</b> on desktop.';
+  } else {
+    browseBtn.disabled = false;
+    compatNote.textContent = '';
+  }
+}
+
+closeModal.addEventListener('click', () => overlay.classList.remove('open'));
+overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('open'); });
+
+async function scanDirectory(dirHandle, path = '') {
+  let found = [];
+  for await (const [name, handle] of dirHandle.entries()) {
+    const fullPath = path ? `${path}/${name}` : name;
+    if (handle.kind === 'file') {
+      const lower = name.toLowerCase();
+      if (lower.endsWith('.ymap') || lower.endsWith('.ybn')) {
+        found.push({ name, path: fullPath, parentHandle: dirHandle });
+      }
+    } else if (handle.kind === 'directory') {
+      const sub = await scanDirectory(handle, fullPath);
+      found = found.concat(sub);
+    }
+  }
+  return found;
+}
+
+browseBtn.addEventListener('click', async () => {
+  if (!currentZone) return;
+  try {
+    statusLine.textContent = 'Waiting for folder selection…';
+    resultsEl.innerHTML = '';
+    const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+
+    if (dirHandle.name.toLowerCase() !== 'resources') {
+      statusLine.classList.add('status-error');
+      statusLine.textContent = `Please select your "resources" folder only. You selected "${dirHandle.name}".`;
+      return;
+    }
+    statusLine.classList.remove('status-error');
+
+    statusLine.textContent = `Scanning "${dirHandle.name}"…`;
+    const allYmaps = await scanDirectory(dirHandle, dirHandle.name);
+
+    statusLine.textContent = `Scan complete — ${allYmaps.length} file(s) found in total.`;
+    renderResults(currentZone, allYmaps);
+  } catch (err) {
+    statusLine.classList.remove('status-error');
+    if (err.name === 'AbortError') {
+      statusLine.textContent = 'Folder selection cancelled.';
+    } else {
+      statusLine.textContent = 'Could not scan folder: ' + err.message;
+    }
+  }
+});
+
+function renderResults(zone, allYmaps) {
+  resultsEl.innerHTML = '';
+
+  const byName = {};
+  allYmaps.forEach(f => {
+    const key = f.name.toLowerCase();
+    (byName[key] = byName[key] || []).push(f);
+  });
+
+  zone.files.forEach(wanted => {
+    const key = wanted.toLowerCase();
+    const entries = byName[key] || [];
+
+    const row = document.createElement('div');
+    row.className = 'result-row';
+
+    let badgeClass, badgeText;
+    if (entries.length === 0) {
+      badgeClass = 'missing'; badgeText = 'MISSING';
+    } else if (entries.length === 1) {
+      badgeClass = 'ok'; badgeText = 'OK';
+    } else {
+      badgeClass = 'dup'; badgeText = `${entries.length} COPIES`;
+    }
+
+    row.innerHTML = `
+      <div class="r-head">
+        <div class="fname">${wanted}</div>
+        <div class="badge ${badgeClass}">${badgeText}</div>
+      </div>
+    `;
+
+    if (entries.length > 0) {
+      const pathsDiv = document.createElement('div');
+      pathsDiv.className = 'paths';
+      entries.forEach(entry => {
+        const line = document.createElement('div');
+        line.className = 'path-line';
+
+        const pathText = document.createElement('span');
+        pathText.className = 'path-text';
+        pathText.textContent = 'Location: ' + entry.path;
+        line.appendChild(pathText);
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'delete-btn';
+        delBtn.textContent = 'Delete';
+        delBtn.addEventListener('click', () => confirmDelete(entry, line, zone, allYmaps));
+        line.appendChild(delBtn);
+
+        pathsDiv.appendChild(line);
+      });
+      row.appendChild(pathsDiv);
+    } else {
+      const d = document.createElement('div');
+      d.className = 'paths';
+      const line = document.createElement('div');
+      line.textContent = 'Not found in this folder.';
+      d.appendChild(line);
+      row.appendChild(d);
+    }
+
+    resultsEl.appendChild(row);
+  });
+
+  if (zone.files.every(f => (byName[f.toLowerCase()] || []).length === 1)) {
+    const ok = document.createElement('div');
+    ok.style.textAlign = 'center';
+    ok.style.color = 'var(--good)';
+    ok.style.fontSize = '12.5px';
+    ok.style.marginTop = '6px';
+    ok.textContent = 'All good — no duplicates found for this zone.';
+    resultsEl.appendChild(ok);
+  }
+}
+
+async function confirmDelete(entry, lineEl, zone, allYmaps) {
+  const sure = window.confirm(
+    `Delete this file permanently?\n\n${entry.path}\n\nThis cannot be undone.`
+  );
+  if (!sure) return;
+
+  try {
+    await entry.parentHandle.removeEntry(entry.name);
+
+    // Remove it from our in-memory list and re-render this zone's results
+    const idx = allYmaps.indexOf(entry);
+    if (idx !== -1) allYmaps.splice(idx, 1);
+    renderResults(zone, allYmaps);
+    statusLine.textContent = `Deleted: ${entry.path}`;
+  } catch (err) {
+    window.alert('Could not delete file: ' + err.message);
+  }
+}
+
+if (basemapImg.complete && basemapImg.naturalWidth) {
+  renderZones();
+} else {
+  basemapImg.addEventListener('load', renderZones);
+}
+window.addEventListener('resize', renderZones);
+
+// ── PRELOADER sequence ──
+(function() {
+  var preloader = document.getElementById('preloader');
+  var fill = document.getElementById('pre-img-fill');
+  var tvContent = document.getElementById('tv-content');
+  var tvFlash = document.getElementById('tv-flash');
+  if (!preloader || !fill) return;
+
+  // After fill completes (~2.4s): glow burst
+  setTimeout(function() {
+    fill.classList.add('filled');
+
+    // 500ms after glow starts: fade the preloader out AND power on the "TV"
+    setTimeout(function() {
+      preloader.classList.add('hide');
+      setTimeout(function() { preloader.style.display = 'none'; }, 1200);
+
+      if (tvContent) {
+        tvContent.classList.remove('tv-off');
+        tvContent.classList.add('tv-on');
+      }
+      if (tvFlash) {
+        tvFlash.classList.add('flash-active');
+        setTimeout(function() { tvFlash.classList.remove('flash-active'); }, 550);
+      }
+    }, 500);
+  }, 2400);
+})();
+</script>
+
+</body>
+</html>
